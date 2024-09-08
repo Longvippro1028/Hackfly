@@ -1,0 +1,134 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local camera = game.Workspace.CurrentCamera
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+
+local flying = false
+local noMap = false
+local hovering = false
+local speed = 5
+local maxSpeed = 100
+local minSpeed = 0
+local allDisabled = false
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local function createButton(name, position, text, color, parent, clickFunction)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 50, 0, 25)
+    button.Position = position
+    button.Text = text
+    button.BackgroundColor3 = color
+    button.Parent = parent
+    button.MouseButton1Click:Connect(clickFunction)
+    return button
+end
+
+local flyButton = createButton("FlyButton", UDim2.new(0, 10, 0, 10), "On Fly", Color3.new(0, 1, 0), screenGui, function()
+    if not allDisabled then
+        flying = true
+    end
+end)
+
+local stopFlyButton = createButton("StopFlyButton", UDim2.new(0, 70, 0, 10), "Off Fly", Color3.new(1, 0, 0), screenGui, function()
+    if not allDisabled then
+        flying = false
+        humanoidRootPart.Anchored = false
+    end
+end)
+
+local noMapButton = createButton("NoMapButton", UDim2.new(0, 10, 0, 45), "No Map", Color3.new(0, 0, 1), screenGui, function()
+    if not allDisabled then
+        noMap = true
+    end
+end)
+
+local offMapButton = createButton("OffMapButton", UDim2.new(0, 70, 0, 45), "Off Map", Color3.new(1, 1, 0), screenGui, function()
+    if not allDisabled then
+        noMap = false
+    end
+end)
+
+local increaseSpeedButton = createButton("IncreaseSpeedButton", UDim2.new(0, 10, 0, 80), "+1 Speed", Color3.new(0, 1, 1), screenGui, function()
+    if not allDisabled and speed < maxSpeed then
+        speed = speed + 1
+    end
+end)
+
+local decreaseSpeedButton = createButton("DecreaseSpeedButton", UDim2.new(0, 70, 0, 80), "-1 Speed", Color3.new(1, 0, 1), screenGui, function()
+    if not allDisabled and speed > minSpeed then
+        speed = speed - 1
+    end
+end)
+
+local stopButton = createButton("StopButton", UDim2.new(0, 10, 0, 115), "Stop", Color3.new(1, 0.5, 0), screenGui, function()
+    if not allDisabled then
+        hovering = true
+        flying = false
+        humanoidRootPart.Anchored = true
+    end
+end)
+
+local moveButton = createButton("MoveButton", UDim2.new(0, 70, 0, 115), "Move", Color3.new(0.5, 1, 0), screenGui, function()
+    if not allDisabled then
+        hovering = false
+        humanoidRootPart.Anchored = false
+    end
+end)
+
+local disableAllButton = createButton("DisableAllButton", UDim2.new(0, 10, 0, 150), "Disable All", Color3.new(1, 0, 1), screenGui, function()
+    allDisabled = true
+    flying = false
+    hovering = false
+    humanoidRootPart.Anchored = false
+    noMap = false
+    for _, button in ipairs(screenGui:GetChildren()) do
+        if button:IsA("TextButton") then
+            button:Destroy()
+        end
+    end
+end)
+
+runService.RenderStepped:Connect(function()
+    if allDisabled then
+        return
+    end
+
+    if flying then
+        humanoidRootPart.Anchored = true
+        local moveDirection = camera.CFrame.LookVector
+        humanoidRootPart.CFrame = humanoidRootPart.CFrame + (moveDirection * speed * 0.1)
+
+        if noMap then
+            humanoidRootPart.CanCollide = false
+        else
+            humanoidRootPart.CanCollide = true
+        end
+    elseif hovering then
+        humanoidRootPart.Anchored = true
+    else
+        humanoidRootPart.Anchored = false
+    end
+end)
+
+local function enableWallHack()
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end
+
+local function disableWallHack()
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+end
+
+noMapButton.MouseButton1Click:Connect(enableWallHack)
+offMapButton.MouseButton1Click:Connect(disableWallHack)
